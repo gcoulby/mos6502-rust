@@ -49,7 +49,7 @@ pub fn resolve(mode: &AddressMode, memory: &Memory, pc: u16, a: u8, x: u8, y: u8
 }
 
 #[cfg(test)]
-mod Test {
+mod test {
     use super::*;
     use crate::addressing::resolve;
 
