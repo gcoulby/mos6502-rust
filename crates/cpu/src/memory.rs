@@ -38,6 +38,12 @@ impl Memory {
     pub fn write(&mut self, addr: u16, val: u8) {
         self.data[addr as usize] = val;
     }
+
+    pub fn load_bytes(&mut self, addr: u16, bytes: &[u8]) {
+        for (i, &byte) in bytes.iter().enumerate() {
+            self.write(addr + i as u16, byte);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -80,5 +86,22 @@ mod tests {
         let val = memory.read_word(0x00F0);
 
         assert_eq!(val, 0x4442);
+    }
+
+    #[test]
+    fn load_bytes() {
+        let mut memory = Memory::default();
+
+        let bytes = [0xA9, 0x00, 0x85, 0x80, 0xA9, 0x02, 0x85, 0x81];
+
+        memory.load_bytes(0x0600, &bytes);
+
+        let m0 = memory.read(0x0600);
+        let m1 = memory.read(0x0601);
+        let m7 = memory.read(0x0607);
+
+        assert_eq!(m0, 0xA9);
+        assert_eq!(m1, 0x00);
+        assert_eq!(m7, 0x81);
     }
 }
