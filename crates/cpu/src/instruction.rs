@@ -1,8 +1,14 @@
-use crate::addressing::AddressMode;
+use crate::{addressing::AddressMode, instruction};
+
+pub struct DecodedInstruction {
+    instruction: Instruction,
+    address_mode: Option<AddressMode>,
+    size: u8,
+    controls_pc: bool,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
-
 pub enum Instruction {
     // ADC - Add with Carry
     AdcIm = 0x69,
@@ -550,11 +556,46 @@ impl Instruction {
             | Some(AddressMode::Indirect) => 3,
         }
     }
+
+    pub fn controls_pc(&self) -> bool {
+        matches!(
+            self,
+            Self::JmpAbs
+                | Self::JmpInd
+                | Self::Jsr
+                | Self::Rts
+                | Self::Rti
+                | Self::BccRel
+                | Self::BcsRel
+                | Self::BeqRel
+                | Self::BmiRel
+                | Self::BneRel
+                | Self::BplRel
+                | Self::BvcRel
+                | Self::BvsRel
+        )
+    }
+
+    pub fn decode(byte: u8) -> Result<DecodedInstruction, u8> {
+        let instruction = Instruction::try_from(byte)?;
+        let address_mode = instruction.address_mode();
+        let size = instruction.size();
+        let controls_pc = instruction.controls_pc();
+        Ok(DecodedInstruction {
+            instruction,
+            address_mode,
+            size,
+            controls_pc,
+        })
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::instruction::Instruction;
+    use crate::{
+        addressing::AddressMode,
+        instruction::Instruction::{self, LdaAbs},
+    };
 
     #[test]
     fn check_addr() {
@@ -610,6 +651,26 @@ mod test {
                 Ok(i) => assert_eq!(i.size(), 3, "failed for opcode {:#04x}", byte),
                 Err(e) => panic!("unexpected invalid opcode: {:#04x}", e),
             }
+        }
+    }
+
+    #[test]
+    fn controls_pc() {
+        assert!(Instruction::JmpAbs.controls_pc());
+        assert!(!Instruction::LdaAbs.controls_pc());
+    }
+
+    #[test]
+    fn decode() {
+        let inst = 0xA9;
+        match Instruction::decode(inst) {
+            Ok(i) => {
+                assert_eq!(i.instruction, Instruction::LdaIm);
+                assert_eq!(i.size, 2);
+                assert_eq!(i.address_mode, Some(AddressMode::Immediate));
+                assert_eq!(i.controls_pc, false);
+            }
+            Err(e) => panic!("unexpected invalid opcode: {:#04x}", e),
         }
     }
 }

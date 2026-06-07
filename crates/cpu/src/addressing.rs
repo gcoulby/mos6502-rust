@@ -1,5 +1,6 @@
 use crate::memory::Memory;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AddressMode {
     Accumulator,
     Immediate,
