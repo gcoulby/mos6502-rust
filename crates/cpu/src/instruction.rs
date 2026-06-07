@@ -1,5 +1,8 @@
+use crate::addressing::AddressMode;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
+
 pub enum Instruction {
     // ADC - Add with Carry
     AdcIm = 0x69,
@@ -362,6 +365,251 @@ impl TryFrom<u8> for Instruction {
             0x9A => Ok(Self::Txs),
             0x98 => Ok(Self::Tya),
             unknown => Err(unknown),
+        }
+    }
+}
+
+impl Instruction {
+    pub fn address_mode(&self) -> Option<AddressMode> {
+        match self {
+            Self::AdcIm
+            | Self::AndIm
+            | Self::CmpIm
+            | Self::CpxIm
+            | Self::CpyIm
+            | Self::EorIm
+            | Self::LdaIm
+            | Self::LdxIm
+            | Self::LdyIm
+            | Self::OraIm
+            | Self::SbcIm => Some(AddressMode::Immediate),
+
+            Self::AdcZp
+            | Self::AndZp
+            | Self::AslZp
+            | Self::BitZp
+            | Self::CmpZp
+            | Self::CpxZp
+            | Self::CpyZp
+            | Self::DecZp
+            | Self::EorZp
+            | Self::IncZp
+            | Self::LdaZp
+            | Self::LdxZp
+            | Self::LdyZp
+            | Self::LsrZp
+            | Self::OraZp
+            | Self::RolZp
+            | Self::RorZp
+            | Self::SbcZp
+            | Self::StaZp
+            | Self::StxZp
+            | Self::StyZp => Some(AddressMode::ZeroPage),
+
+            Self::AdcZpx
+            | Self::AndZpx
+            | Self::AslZpx
+            | Self::CmpZpx
+            | Self::DecZpx
+            | Self::EorZpx
+            | Self::IncZpx
+            | Self::LdaZpx
+            | Self::LdyZpx
+            | Self::LsrZpx
+            | Self::OraZpx
+            | Self::RolZpx
+            | Self::RorZpx
+            | Self::SbcZpx
+            | Self::StaZpx
+            | Self::StyZpx => Some(AddressMode::ZeroPageX),
+
+            Self::LdxZpy | Self::StxZpy => Some(AddressMode::ZeroPageY),
+
+            Self::AdcAbs
+            | Self::AndAbs
+            | Self::AslAbs
+            | Self::BitAbs
+            | Self::CmpAbs
+            | Self::CpxAbs
+            | Self::CpyAbs
+            | Self::DecAbs
+            | Self::EorAbs
+            | Self::IncAbs
+            | Self::JmpAbs
+            | Self::Jsr
+            | Self::LdaAbs
+            | Self::LdxAbs
+            | Self::LdyAbs
+            | Self::LsrAbs
+            | Self::OraAbs
+            | Self::RolAbs
+            | Self::RorAbs
+            | Self::SbcAbs
+            | Self::StaAbs
+            | Self::StxAbs
+            | Self::StyAbs => Some(AddressMode::Absolute),
+
+            Self::AdcAbsx
+            | Self::AndAbsx
+            | Self::AslAbsx
+            | Self::CmpAbsx
+            | Self::DecAbsx
+            | Self::EorAbsx
+            | Self::IncAbsx
+            | Self::LdaAbsx
+            | Self::LdyAbsx
+            | Self::LsrAbsx
+            | Self::OraAbsx
+            | Self::RolAbsx
+            | Self::RorAbsx
+            | Self::SbcAbsx
+            | Self::StaAbsx => Some(AddressMode::AbsoluteX),
+
+            Self::AdcAbsy
+            | Self::AndAbsy
+            | Self::CmpAbsy
+            | Self::EorAbsy
+            | Self::LdaAbsy
+            | Self::LdxAbsy
+            | Self::OraAbsy
+            | Self::SbcAbsy
+            | Self::StaAbsy => Some(AddressMode::AbsoluteY),
+
+            Self::JmpInd => Some(AddressMode::Indirect),
+
+            Self::AdcIndx
+            | Self::AndIndx
+            | Self::CmpIndx
+            | Self::EorIndx
+            | Self::LdaIndx
+            | Self::OraIndx
+            | Self::SbcIndx
+            | Self::StaIndx => Some(AddressMode::IndirectX),
+
+            Self::AdcIndy
+            | Self::AndIndy
+            | Self::CmpIndy
+            | Self::EorIndy
+            | Self::LdaIndy
+            | Self::OraIndy
+            | Self::SbcIndy
+            | Self::StaIndy => Some(AddressMode::IndirectY),
+
+            Self::BccRel
+            | Self::BcsRel
+            | Self::BeqRel
+            | Self::BmiRel
+            | Self::BneRel
+            | Self::BplRel
+            | Self::BvcRel
+            | Self::BvsRel => Some(AddressMode::Relative),
+
+            Self::AslA | Self::LsrA | Self::RolA | Self::RorA => Some(AddressMode::Accumulator),
+
+            Self::Brk
+            | Self::Clc
+            | Self::Cld
+            | Self::Cli
+            | Self::Clv
+            | Self::Dex
+            | Self::Dey
+            | Self::Inx
+            | Self::Iny
+            | Self::Nop
+            | Self::Pha
+            | Self::Php
+            | Self::Pla
+            | Self::Plp
+            | Self::Rti
+            | Self::Rts
+            | Self::Sec
+            | Self::Sed
+            | Self::Sei
+            | Self::Tax
+            | Self::Tay
+            | Self::Tsx
+            | Self::Txa
+            | Self::Txs
+            | Self::Tya => None,
+        }
+    }
+
+    pub fn size(&self) -> u8 {
+        match self.address_mode() {
+            None | Some(AddressMode::Accumulator) => 1,
+            Some(AddressMode::Immediate)
+            | Some(AddressMode::ZeroPage)
+            | Some(AddressMode::ZeroPageX)
+            | Some(AddressMode::ZeroPageY)
+            | Some(AddressMode::Relative)
+            | Some(AddressMode::IndirectX)
+            | Some(AddressMode::IndirectY) => 2,
+            Some(AddressMode::Absolute)
+            | Some(AddressMode::AbsoluteX)
+            | Some(AddressMode::AbsoluteY)
+            | Some(AddressMode::Indirect) => 3,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::instruction::Instruction;
+
+    #[test]
+    fn check_addr() {
+        let inst_byte = 0xA9;
+
+        let inst = Instruction::try_from(inst_byte);
+
+        assert_eq!(inst, Ok(Instruction::LdaIm))
+    }
+
+    #[test]
+    fn check_false_addr() {
+        let inst_byte = 0xFF;
+        let inst = Instruction::try_from(inst_byte);
+
+        assert_eq!(inst, Err(inst_byte))
+    }
+
+    #[test]
+    fn check_brk_eval() {
+        let inst_byte = 0x00;
+        let inst = Instruction::try_from(inst_byte);
+
+        assert_eq!(inst, Ok(Instruction::Brk))
+    }
+
+    #[test]
+    fn test_accumulator_size() {
+        let inst_byte = 0x0A;
+        let inst = Instruction::try_from(inst_byte);
+        match inst {
+            Ok(i) => assert_eq!(i.size(), 1),
+            Err(e) => panic!("unexpected invalid opcode: {:#04x}", e),
+        }
+    }
+
+    #[test]
+    fn test_two_byte_size() {
+        let opcodes = [0xA9, 0xA5, 0xB5, 0xB6, 0x90, 0xA1, 0xB1];
+        for byte in opcodes {
+            match Instruction::try_from(byte) {
+                Ok(i) => assert_eq!(i.size(), 2, "failed for opcode {:#04x}", byte),
+                Err(e) => panic!("unexpected invalid opcode: {:#04x}", e),
+            }
+        }
+    }
+
+    #[test]
+    fn test_three_byte_size() {
+        let opcodes = [0xAD, 0xBD, 0xB9, 0x6C];
+        for byte in opcodes {
+            match Instruction::try_from(byte) {
+                Ok(i) => assert_eq!(i.size(), 3, "failed for opcode {:#04x}", byte),
+                Err(e) => panic!("unexpected invalid opcode: {:#04x}", e),
+            }
         }
     }
 }
